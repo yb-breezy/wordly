@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wordly - Dictionary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1209;
+      --paper: #f5f0e8;
+      --cream: #ede7d5;
+      --accent: #c8522a;
+      --muted: #8a7d68;
+      --rule: #d4c9b0;
+      --card: #faf6ee;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(212,201,176,0.35) 27px, rgba(212,201,176,0.35) 28px);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      padding: 1.5rem 2.5rem;
+      border-bottom: 2px solid var(--rule);
+      background: var(--paper);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; }
+    .logo span { color: var(--accent); }
+    .tagline { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 0.2rem; }
+    .search-section { max-width: 680px; margin: 3rem auto 0; padding: 0 1.5rem; }
+    .search-label { display: block; font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+    .search-form { display: flex; border: 2px solid var(--ink); border-radius: 3px; overflow: hidden; box-shadow: 4px 4px 0 var(--ink); transition: box-shadow 0.15s; }
+    .search-form:focus-within { box-shadow: 6px 6px 0 var(--accent); }
+    #word-input { flex: 1; border: none; outline: none; padding: 0.9rem 1.25rem; font-family: 'Playfair Display', serif; font-size: 1.2rem; background: var(--card); color: var(--ink); caret-color: var(--accent); }
+    #word-input::placeholder { color: var(--muted); font-style: italic; }
+    #search-btn { padding: 0.9rem 1.5rem; background: var(--ink); color: var(--paper); border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; transition: background 0.15s; }
+    #search-btn:hover { background: var(--accent); }
+    #search-btn:disabled { background: var(--muted); cursor: not-allowed; }
+    #history-bar { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .history-pill { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.25rem 0.65rem; border: 1.5px solid var(--rule); border-radius: 999px; background: var(--cream); color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .history-pill:hover { border-color: var(--accent); color: var(--accent); }
+    #results { max-width: 680px; margin: 2.5rem auto 4rem; padding: 0 1.5rem; }
+    .loading { text-align: center; padding: 3rem 0; }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--rule); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+    .error-card { border: 2px solid var(--accent); border-radius: 4px; padding: 1.5rem; background: #fff5f2; text-align: center; }
+    .error-card p { font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--accent); margin-top: 0.5rem; }
+    .word-card { background: var(--card); border: 2px solid var(--ink); border-radius: 4px; box-shadow: 5px 5px 0 var(--ink); overflow: hidden; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .word-header { padding: 1.75rem 2rem 1.25rem; border-bottom: 1.5px solid var(--rule); display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+    .word-title { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+    .word-phonetic { font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--muted); margin-top: 0.3rem; }
+    #audio-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: 1.5px solid var(--ink); border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 0.72rem; cursor: pointer; color: var(--ink); transition: all 0.15s; }
+    #audio-btn:hover { background: var(--ink); color: var(--paper); }
+    #audio-btn.hidden { display: none; }
+    .meanings-section { padding: 1.5rem 2rem; }
+    .meaning-block { margin-bottom: 1.75rem; }
+    .meaning-block:last-child { margin-bottom: 0; }
+    .part-of-speech { display: inline-block; font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); background: rgba(200,82,42,0.09); padding: 0.2rem 0.6rem; border-radius: 2px; margin-bottom: 1rem; }
+    .definitions-list { list-style: none; border-left: 3px solid var(--rule); padding-left: 1.25rem; }
+    .definitions-list li { margin-bottom: 0.9rem; font-size: 0.95rem; line-height: 1.6; }
+    .def-number { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-right: 0.35rem; }
+    .example { display: block; margin-top: 0.35rem; font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.88rem; color: var(--muted); }
+    .synonyms-row { padding: 1rem 2rem 1.5rem; border-top: 1.5px solid var(--rule); }
+    .synonyms-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; }
+    .synonym-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .syn-chip { font-family: 'DM Mono', monospace; font-size: 0.75rem; padding: 0.28rem 0.7rem; border: 1.5px solid var(--rule); border-radius: 2px; cursor: pointer; color: var(--ink); background: var(--cream); transition: all 0.15s; }
+    .syn-chip:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .source-row { padding: 0.85rem 2rem; border-top: 1.5px solid var(--rule); display: flex; align-items: center; gap: 0.5rem; }
+    .source-row span { font-family: 'DM Mono', monospace; font-size: 0.67rem; color: var(--muted); }
+    .source-row a { font-family: 'DM Mono', monospace; font-size: 0.67rem; color: var(--accent); text-decoration: none; }
+    .source-row a:hover { text-decoration: underline; }
+    .empty-state { text-align: center; padding: 4rem 0 2rem; }
+    .big-letter { font-family: 'Playfair Display', serif; font-size: 8rem; font-weight: 700; color: var(--rule); line-height: 1; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .empty-state p { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.08em; }
+    @media (max-width: 500px) {
+      header { padding: 1rem 1.25rem; }
+      .logo { font-size: 1.4rem; }
+      .word-title { font-size: 1.8rem; }
+      .word-header, .meanings-section, .synonyms-row, .source-row { padding-left: 1.25rem; padding-right: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <div class="logo">W<span>o</span>rdly</div>
+      <div class="tagline">Interactive Dictionary</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="search-section">
+      <label class="search-label" for="word-input">Look up a word</label>
+      <form class="search-form" id="search-form" role="search" aria-label="Word search">
+        <input type="text" id="word-input" placeholder="e.g. ephemeral" aria-label="Enter a word to search" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button type="submit" id="search-btn" aria-label="Search">Search</button>
+      </form>
+      <div id="history-bar" aria-label="Recent searches" role="list"></div>
+    </section>
+
+    <section id="results" aria-live="polite" aria-atomic="true">
+      <div class="empty-state">
+        <div class="big-letter">W</div>
+        <p>Type a word above to begin</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    var form        = document.getElementById('search-form');
+    var input       = document.getElementById('word-input');
+    var btn         = document.getElementById('search-btn');
+    var results     = document.getElementById('results');
+    var historyBar  = document.getElementById('history-bar');
+    var audioUrl    = null;
+    var searchHistory = [];
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function setLoading(state) {
+      btn.disabled = state;
+      btn.textContent = state ? '...' : 'Search';
+    }
+
+    function showError(msg) {
+      results.innerHTML = '<div class="error-card" role="alert"><p>' + msg + '</p></div>';
+    }
+
+    function addToHistory(word) {
+      if (searchHistory.indexOf(word) !== -1) return;
+      searchHistory.unshift(word);
+      if (searchHistory.length > 6) searchHistory.pop();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      var html = '';
+      for (var i = 0; i < searchHistory.length; i++) {
+        html += '<button class="history-pill" role="listitem">' + escHtml(searchHistory[i]) + '</button>';
+      }
+      historyBar.innerHTML = html;
+      var pills = historyBar.querySelectorAll('.history-pill');
+      for (var j = 0; j < pills.length; j++) {
+        pills[j].addEventListener('click', function() {
+          input.value = this.textContent;
+          fetchWord(this.textContent);
+        });
+      }
+    }
+
+    function renderWord(entry) {
+      var word = entry.word || '';
+
+      var phonetic = entry.phonetic || '';
+      if (!phonetic && entry.phonetics) {
+        for (var i = 0; i < entry.phonetics.length; i++) {
+          if (entry.phonetics[i].text) { phonetic = entry.phonetics[i].text; break; }
+        }
+      }
+
+      audioUrl = null;
+      if (entry.phonetics) {
+        for (var p = 0; p < entry.phonetics.length; p++) {
+          if (entry.phonetics[p].audio) { audioUrl = entry.phonetics[p].audio; break; }
+        }
+      }
+
+      var source = '';
+      if (entry.sourceUrls && entry.sourceUrls.length > 0) source = entry.sourceUrls[0];
+
+      var meaningsHTML = '';
+      var meanings = entry.meanings || [];
+
+      for (var m = 0; m < meanings.length; m++) {
+        if (m > 0) meaningsHTML += '<hr style="border:none;border-top:1.5px solid var(--rule);margin:1.25rem 0;">';
+
+        var meaning = meanings[m];
+        var pos = meaning.partOfSpeech || '';
+        var defs = meaning.definitions ? meaning.definitions.slice(0, 4) : [];
+
+        var defsHTML = '';
+        for (var d = 0; d < defs.length; d++) {
+          defsHTML += '<li><span class="def-number">' + (d + 1) + '.</span>' + escHtml(defs[d].definition);
+          if (defs[d].example) defsHTML += '<em class="example">"' + escHtml(defs[d].example) + '"</em>';
+          defsHTML += '</li>';
+        }
+
+        var allSyns = [];
+        if (meaning.synonyms) allSyns = allSyns.concat(meaning.synonyms);
+        for (var d2 = 0; d2 < defs.length; d2++) {
+          if (defs[d2].synonyms) allSyns = allSyns.concat(defs[d2].synonyms);
+        }
+        var uniqueSyns = [];
+        for (var s = 0; s < allSyns.length; s++) {
+          if (uniqueSyns.indexOf(allSyns[s]) === -1) uniqueSyns.push(allSyns[s]);
+          if (uniqueSyns.length >= 10) break;
+        }
+
+        var synsHTML = '';
+        if (uniqueSyns.length > 0) {
+          var chips = '';
+          for (var sc = 0; sc < uniqueSyns.length; sc++) {
+            chips += '<button class="syn-chip">' + escHtml(uniqueSyns[sc]) + '</button>';
+          }
+          synsHTML = '<div class="synonyms-row"><div class="synonyms-label">Synonyms</div><div class="synonym-chips">' + chips + '</div></div>';
+        }
+
+        meaningsHTML += '<div class="meaning-block"><span class="part-of-speech">' + escHtml(pos) + '</span><ul class="definitions-list">' + defsHTML + '</ul>' + synsHTML + '</div>';
+      }
+
+      var phoneticHTML = phonetic ? '<div class="word-phonetic">' + escHtml(phonetic) + '</div>' : '';
+      var audioClass = audioUrl ? '' : 'hidden';
+      var sourceHTML = source ? '<div class="source-row"><span>Source:</span><a href="' + escHtml(source) + '" target="_blank" rel="noopener noreferrer">' + escHtml(source) + '</a></div>' : '';
+
+      results.innerHTML =
+        '<div class="word-card">' +
+          '<div class="word-header">' +
+            '<div><div class="word-title">' + escHtml(word) + '</div>' + phoneticHTML + '</div>' +
+            '<button id="audio-btn" class="' + audioClass + '">&#9654; Pronounce</button>' +
+          '</div>' +
+          '<div class="meanings-section">' + meaningsHTML + '</div>' +
+          sourceHTML +
+        '</div>';
+
+      var audioBtn = document.getElementById('audio-btn');
+      if (audioBtn && audioUrl) {
+        var capturedUrl = audioUrl;
+        audioBtn.addEventListener('click', function() {
+          new Audio(capturedUrl).play().catch(function() {
+            audioBtn.textContent = 'Audio unavailable';
+          });
+        });
+      }
+
+      var synChips = results.querySelectorAll('.syn-chip');
+      for (var c = 0; c < synChips.length; c++) {
+        synChips[c].addEventListener('click', function() {
+          input.value = this.textContent;
+          fetchWord(this.textContent);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+    }
+
+    function fetchWord(word) {
+      word = word.trim();
+      if (!word) return;
+
+      setLoading(true);
+      results.innerHTML = '<div class="loading"><div class="spinner"></div><p>Looking up "' + escHtml(word) + '"...</p></div>';
+      audioUrl = null;
+
+      fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word))
+        .then(function(response) {
+          if (response.status === 404) throw new Error('"' + word + '" was not found. Check the spelling and try again.');
+          if (!response.ok) throw new Error('Request failed (' + response.status + '). Please try again.');
+          return response.json();
+        })
+        .then(function(data) {
+          renderWord(data[0]);
+          addToHistory(data[0].word);
+          setLoading(false);
+        })
+        .catch(function(err) {
+          showError(err.message || 'Something went wrong. Please try again.');
+          setLoading(false);
+        });
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var word = input.value.trim();
+      if (!word) { input.focus(); return; }
+      fetchWord(word);
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === '/' && document.activeElement !== input) {
+        e.preventDefault();
+        input.focus();
+      }
+    });
+  </script>
+</body>
+</html>
